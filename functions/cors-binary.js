@@ -1,4 +1,4 @@
-var fetch = require("node-fetch");
+import fetch from "node-fetch";
 exports.handler = async (event, context) => {
     var url = event.path;
     url = url.split(".netlify/functions/cors-binary/")[1];
