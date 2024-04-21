@@ -1,4 +1,5 @@
-import fetch from "node-fetch";
+import axios from "axios";
+
 exports.handler = async (event, context) => {
     var url = event.path;
     url = url.split(".netlify/functions/cors/")[1];
@@ -23,26 +24,34 @@ exports.handler = async (event, context) => {
     var options = {
         method: event.httpMethod.toUpperCase(),
         headers: header_to_send,
-        body: event.body,
+        data: event.body, // Use data instead of body for POST requests
     };
 
-    if (event.httpMethod.toUpperCase() == "GET" || event.httpMethod.toUpperCase() == "HEAD") delete options.body;
+    if (event.httpMethod.toUpperCase() == "GET" || event.httpMethod.toUpperCase() == "HEAD") delete options.data;
 
-    var response = await fetch(url, options);
-    var response_text = await response.text();
-    var headers = response.headers.raw();
+    try {
+        const response = await axios(url, options); // Use Axios here
+        const response_text = response.data; // Access data from response
+        const headers = response.headers;
 
-    var cookie_header = null;
-    if (headers["set-cookie"]) cookie_header = headers["set-cookie"];
+        var cookie_header = null;
+        if (headers["set-cookie"]) cookie_header = headers["set-cookie"];
 
-    return {
-        statusCode: 200,
-        body: response_text,
-        headers: {
-            "content-type": String(headers["content-type"]) || "text/plain",
-        },
-        multiValueHeaders: {
-            "set-cookie": cookie_header || [],
-        },
-    };
+        return {
+            statusCode: 200,
+            body: response_text,
+            headers: {
+                "content-type": headers["content-type"] || "text/plain",
+            },
+            multiValueHeaders: {
+                "set-cookie": cookie_header || [],
+            },
+        };
+    } catch (error) {
+        console.error(error); // Handle errors from Axios request
+        return {
+            statusCode: 500,
+            body: "Error fetching data",
+        };
+    }
 };
